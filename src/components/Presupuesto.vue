@@ -1,11 +1,11 @@
 <template>
-  <v-container>
+  <v-container v-if="$store.state.itemSelected !== null">
     <v-col>
-      <v-card max-width="800" class="mx-auto" style="margin-top: 50px">
-        <v-app-bar dark :color="$store.state.presupuestoSelected.color">
+      <v-card max-width="100%" class="mx-auto" style="margin-top: 50px">
+        <v-app-bar dark :color="$store.state.itemSelected.color">
           <v-toolbar-title
-            >{{ $store.state.presupuestoSelected.name }}:
-            {{ $store.state.presupuestoSelected.monto }}$</v-toolbar-title
+            >{{ $store.state.itemSelected.name }}:
+            {{ $store.state.itemSelected.monto }}$</v-toolbar-title
           ><br />
           <v-card-subtitle
             style="position: absolute; top: 40%; left: -1px; color: white"
@@ -25,13 +25,16 @@
           <v-btn icon @click="showNewEgreso">
             <v-icon>mdi-plus-box-multiple-outline</v-icon>
           </v-btn>
+          <v-btn icon @click="deletePresupuesto($store.state.itemSelected)">
+            <v-icon>mdi-delete-empty-outline</v-icon>
+          </v-btn>
         </v-app-bar>
 
         <v-container>
           <v-row dense>
             <v-col
               cols="12"
-              v-if="$store.state.presupuestoSelected.children.length === 0"
+              v-if="$store.state.itemSelected.children.length === 0"
               style="text-align: center"
             >
               <h5>no hay egresos</h5>
@@ -43,7 +46,7 @@
             </v-col>
             <v-col
               cols="12"
-              v-for="item in $store.state.presupuestoSelected.children"
+              v-for="item in $store.state.itemSelected.children"
               :key="item.name"
             >
               <v-hover v-slot:default="{ hover }">
@@ -53,7 +56,7 @@
                   max-height="80px"
                   :elevation="hover ? 24 : 2"
                 >
-                  <v-card-title class="headline">
+                  <v-card-title  style="font-size:100%; max-width:230px">
                     {{ item.name }}: {{ item.monto }}$
                   </v-card-title>
 
@@ -61,9 +64,9 @@
                     >{{ item.restante }}$</v-card-subtitle
                   >
 
-                  <v-card-actions>
+                  <v-card-actions >
                     <v-btn icon absolute right top @click="showEditEgreso(item)"
-                      ><v-icon>mdi-pencil</v-icon></v-btn
+                      ><v-icon style="font-size:150%">mdi-pencil</v-icon></v-btn
                     >
                     <v-btn
                       icon
@@ -72,7 +75,7 @@
                       top
                       style="margin-right: 30px"
                       @click="deleteItem(item)"
-                      ><v-icon icon>mdi-delete-empty</v-icon></v-btn
+                      ><v-icon icon style="font-size:150%">mdi-delete-empty</v-icon></v-btn
                     >
                     <v-btn
                       icon
@@ -81,7 +84,7 @@
                       top
                       style="margin-right: 60px"
                       @click="showNewEgresoToItem(item)"
-                      ><v-icon icon>mdi-plus-box-multiple</v-icon></v-btn
+                      ><v-icon icon style="font-size:150%">mdi-plus-box-multiple</v-icon></v-btn
                     >
                     <v-btn
                       icon
@@ -91,7 +94,7 @@
                       style="margin-right: 90px"
                       v-if="item.children.length > 0"
                       @click="showInfo(item)"
-                      ><v-icon icon>mdi-eye</v-icon></v-btn
+                      ><v-icon icon style="font-size:150%">mdi-eye</v-icon></v-btn
                     >
                   </v-card-actions>
                 </v-card>
@@ -339,15 +342,14 @@ export default {
         restante: parseFloat(this.egresoMonto).toFixed(2),
         children: [],
       };
-      this.$store.state.presupuestoSelected.children.push(egreso);
+      this.$store.state.itemSelected.children.push(egreso);
 
-      ApiService.postEgreso(
-        this.$store.state.presupuestoSelected.id,
-        egreso
-      ).then((res) => {
-        egreso = {};
-        console.log(res);
-      });
+      ApiService.postEgreso(this.$store.state.itemSelected.id, egreso).then(
+        (res) => {
+          egreso = {};
+          console.log(res);
+        }
+      );
       console.log(this.egresos);
       this.egresoName = null;
       this.egresoMonto = null;
@@ -361,8 +363,11 @@ export default {
     },
 
     sendNewEgresoToItem() {
-      console.log(parseFloat(this.itemSelected.restante).toFixed(2) < parseFloat(this.egresoMonto).toFixed(2))
-            console.log(this.itemSelected.restante , this.egresoMonto)
+      console.log(
+        parseFloat(this.itemSelected.restante).toFixed(2) <
+          parseFloat(this.egresoMonto).toFixed(2)
+      );
+      console.log(this.itemSelected.restante, this.egresoMonto);
 
       if (parseInt(this.itemSelected.restante) < parseInt(this.egresoMonto)) {
         this.errorMonto = "No hay suficientes fondos";
@@ -372,14 +377,14 @@ export default {
 
       let egreso = {
         name: this.egresoName,
-        monto:parseFloat( this.egresoMonto).toFixed(2),
+        monto: parseFloat(this.egresoMonto).toFixed(2),
       };
       this.itemSelected.children.push(egreso);
-      this.itemSelected.restante -= parseFloat( this.egresoMonto).toFixed(2);
+      this.itemSelected.restante -= parseFloat(this.egresoMonto).toFixed(2);
       console.log(this.egresos);
 
       ApiService.updateEgreso(
-        this.$store.state.presupuestoSelected.id,
+        this.$store.state.itemSelected.id,
         this.itemSelected
       ).then((res) => {
         egreso = {};
@@ -393,16 +398,15 @@ export default {
     sendEgresoEdited() {
       this.itemSelected.monto = this.egresoMonto;
       this.itemSelected.name = this.egresoName;
-      this.total = this.$store.state.presupuestoSelected.monto;
+      this.total = this.$store.state.itemSelected.monto;
 
-      this.$store.state.presupuestoSelected.children.map((child) => {
+      this.$store.state.itemSelected.children.map((child) => {
         this.total -= child.monto;
       });
       ApiService.editEgreso(
-        this.$store.state.presupuestoSelected.id,
+        this.$store.state.itemSelected.id,
         this.itemSelected
       ).then((res) => {
-        
         console.log(res);
       });
       this.dialogEdit = false;
@@ -424,14 +428,14 @@ export default {
         /* Read more about isConfirmed, isDenied below */
         if (result.isConfirmed) {
           this.total += parseInt(item.monto);
-          this.$store.state.presupuestoSelected.children = this.$store.state.presupuestoSelected.children.filter(
+          this.$store.state.itemSelected.children = this.$store.state.itemSelected.children.filter(
             (child) => child.id !== item.id
           );
           ApiService.deleteEgreso(
-            this.$store.state.presupuestoSelected.id,
+            this.$store.state.itemSelected.id,
             item.id
           ).then((res) => {
-            this.itemSelected=null
+            this.itemSelected = null;
             console.log(res);
           });
           Swal.fire("Eliminado exitosamente!", "", "success");
@@ -440,17 +444,48 @@ export default {
         }
       });
     },
+    deletePresupuesto(item) {
+      console.log(item);
+      Swal.fire({
+        title: `Eliminar presupuesto ${item.name}?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: `Eliminar`,
+      }).then((result) => {
+        /* Read more about isConfirmed, isDenied below */
+        if (result.isConfirmed) {
+          this.total += parseInt(item.monto);
+          this.$store.state.presupuestos = this.$store.state.presupuestos.filter(
+            (child) => child.id !== item.id
+          );
+          ApiService.deletePresupuesto(this.$store.state.itemSelected.id).then(
+            (res) => {
+              this.itemSelected = null;
+              console.log(res);
+            }
+          );
+          Swal.fire("Eliminado exitosamente!", "", "success");
+          this.$router.push("/");
+        } else if (result.isDenied) {
+          Swal.fire("El presupuesto no fue eliminado", "", "info");
+        }
+      });
+    },
   },
   mounted() {
-    if (this.$store.state.presupuestoSelected.children.length === 0) {
-      this.total = this.$store.state.presupuestoSelected.monto;
-    } else {
-      this.total = this.$store.state.presupuestoSelected.monto;
+    ApiService.getPresupuestoById(this.$route.params.id).then((res) => {
+      this.$store.state.itemSelected = res.data;
 
-      this.$store.state.presupuestoSelected.children.map((child) => {
-        this.total -= child.monto;
-      });
-    }
+      if (this.$store.state.itemSelected.children.length === 0) {
+        this.total = this.$store.state.itemSelected.monto;
+      } else {
+        this.total = this.$store.state.itemSelected.monto;
+
+        this.$store.state.itemSelected.children.map((child) => {
+          this.total -= child.monto;
+        });
+      }
+    });
   },
 };
 </script>

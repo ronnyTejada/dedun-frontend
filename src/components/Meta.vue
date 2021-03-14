@@ -1,23 +1,23 @@
 <template>
-  <v-container>
+  <v-container v-if="$store.state.itemSelected !== null">
     <v-card
       class="mx-auto"
-      :color="$store.state.presupuestoSelected.color"
+      :color="$store.state.itemSelected.color"
       dark
       max-width="800"
     >
       <v-card-title>
         <v-icon large left> mdi-piggy-bank</v-icon>
         <span class="title font-weight-light"
-          >{{ $store.state.presupuestoSelected.name }}:
-          {{ $store.state.presupuestoSelected.monto }}$</span
+          >{{ $store.state.itemSelected.name }}:
+          {{ $store.state.itemSelected.monto }}$</span
         >
       </v-card-title>
       <v-card-subtitle>
         <span class="title font-weight-light"
           ><v-icon large left> mdi-cash-multiple</v-icon>
           Ahorrado:
-          {{ $store.state.presupuestoSelected.ahorrado }}$</span
+          {{ $store.state.itemSelected.ahorrado }}$</span
         >
       </v-card-subtitle>
 
@@ -44,12 +44,15 @@
             <v-list-item-title
               >Fecha Limite:
               {{
-                this.$store.state.presupuestoSelected.fechaLimite
+                this.$store.state.itemSelected.fechaLimite
               }}</v-list-item-title
             >
           </v-list-item-content>
 
           <v-row align="center" justify="end">
+            <v-icon class="mr-1" @click="deleteMeta($store.state.itemSelected)">
+              mdi-delete-empty</v-icon
+            >
             <v-icon class="mr-1" @click="showAddMonto">
               mdi-plus-box-multiple</v-icon
             >
@@ -96,24 +99,21 @@
           <ul v-if="days === 0">
             <li>
               Para ahorrar
-              {{ $store.state.presupuestoSelected.monto }}$ en
-              {{ this.weeks }} semanas
+              {{ $store.state.itemSelected.monto }}$ en {{ this.weeks }} semanas
             </li>
             <li>
               debes ahorrar
-              {{ $store.state.presupuestoSelected.monto / this.weeks }}$ cada
-              semana
+              {{ $store.state.itemSelected.monto / this.weeks }}$ cada semana
             </li>
           </ul>
           <ul v-if="days > 0">
             <li>
               Para ahorrar
-              {{ $store.state.presupuestoSelected.monto }}$ en
-              {{ this.days }} dias
+              {{ $store.state.itemSelected.monto }}$ en {{ this.days }} dias
             </li>
             <li>
               debes ahorrar
-              {{ $store.state.presupuestoSelected.monto / this.days }}$ cada dia
+              {{ $store.state.itemSelected.monto / this.days }}$ cada dia
             </li>
           </ul>
         </v-card-text>
@@ -135,6 +135,7 @@
 <script>
 import moment from "moment";
 import Swal from "sweetalert2";
+import { ApiService } from "../api";
 
 export default {
   name: "Meta",
@@ -159,27 +160,61 @@ export default {
       this.dialogInfo = true;
     },
     sendMonto() {
-      this.$store.state.presupuestoSelected.ahorrado += parseInt(this.monto);
+      this.$store.state.itemSelected.ahorrado += parseInt(this.monto);
 
-      let multiplicacion = 100 * this.$store.state.presupuestoSelected.ahorrado;
-      // let montoAux = this.$store.state.presupuestoSelected.monto - this.$store.state.presupuestoSelected.ahorrado
+      let multiplicacion = 100 * this.$store.state.itemSelected.ahorrado;
+      // let montoAux = this.$store.state.itemSelected.monto - this.$store.state.itemSelected.ahorrado
       this.value = parseInt(
-        multiplicacion / this.$store.state.presupuestoSelected.monto
+        multiplicacion / this.$store.state.itemSelected.monto
       );
-      //this.$store.state.presupuestoSelected.ahorrado += parseInt(this.monto);
+      //this.$store.state.itemSelected.ahorrado += parseInt(this.monto);
       if (this.value >= 100) {
         this.msgFelecitaciones();
       }
 
+      ApiService.postDineroAhorro(
+        this.monto,
+        this.$store.state.itemSelected.id
+      ).then((res) => {
+        console.log(res);
+      });
+
       this.dialog = false;
+      this.monto = 0;
+    },
+    deleteMeta(item) {
+      Swal.fire({
+        title: `Eliminar meta ${item.name}?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: `Eliminar`,
+      }).then((result) => {
+        /* Read more about isConfirmed, isDenied below */
+        if (result.isConfirmed) {
+          this.$store.state.metas = this.$store.state.metas.filter(
+            (child) => child.id !== item.id
+          );
+          ApiService.deleteAhorro(this.$store.state.itemSelected.id).then(
+            (res) => {
+              this.itemSelected = null;
+              console.log(res);
+            }
+          );
+          Swal.fire("Eliminado exitosamente!", "", "success");
+          this.$router.push("/");
+        } else if (result.isDenied) {
+          Swal.fire("El presupuesto no fue eliminado", "", "info");
+        }
+      });
     },
     msgFelecitaciones() {
       Swal.fire({
         title: "Felicitaciones, has alcanzado tu meta",
         width: 600,
         padding: "3em",
-        
-        background: " url(https://cdn.pixabay.com/photo/2016/05/25/23/46/background-1416089_960_720.png)",
+
+        background:
+          " url(https://cdn.pixabay.com/photo/2016/05/25/23/46/background-1416089_960_720.png)",
         backdrop: `
     rgba(0,0,123,0.4)
     url("/images/nyan-cat.gif")
@@ -190,18 +225,22 @@ export default {
     },
   },
   mounted() {
-    let multiplicacion = 100 * this.$store.state.presupuestoSelected.ahorrado;
-    this.value = parseInt(
-      multiplicacion / this.$store.state.presupuestoSelected.monto
-    );
+    ApiService.getMetaById(this.$route.params.id).then((res) => {
+      this.$store.state.itemSelected = res.data;
 
-    var fecha1 = moment().format("l");
-    var fecha2 = moment(this.$store.state.presupuestoSelected.fechaLimite);
+      let multiplicacion = 100 * this.$store.state.itemSelected.ahorrado;
+      this.value = parseInt(
+        multiplicacion / this.$store.state.itemSelected.monto
+      );
 
-    this.weeks = fecha2.diff(fecha1, "weeks");
-    if (this.weeks <= 1) {
-      this.days = fecha2.diff(fecha1, "days");
-    }
+      var fecha1 = moment().format("l");
+      var fecha2 = moment(this.$store.state.itemSelected.fechaLimite);
+
+      this.weeks = fecha2.diff(fecha1, "weeks");
+      if (this.weeks <= 1) {
+        this.days = fecha2.diff(fecha1, "days");
+      }
+    });
     console.log(this.weeks, "diferencias");
   },
 };

@@ -2,34 +2,57 @@
   <v-app>
     <v-main>
       <v-app-bar color="white">
-        <v-app-bar-nav-icon></v-app-bar-nav-icon>
         
-        <router-link  to="/"><v-toolbar-title>Dedun</v-toolbar-title></router-link>
+        
+        <router-link  to="/" style="text-decoration:none; color:purple"><v-toolbar-title>Dedun</v-toolbar-title></router-link>
         <v-spacer></v-spacer>
 
-        <v-btn icon>
-          <router-link to="/presupuestoForm"
-            ><v-icon>mdi-heart</v-icon></router-link
-          >
-        </v-btn>
+      
+        <template>
+        <div class="text-center">
+          <v-menu offset-y>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn icon v-bind="attrs" v-on="on">
+                <v-icon>mdi-dots-vertical</v-icon>
 
-        <v-btn icon>
-          <v-icon>mdi-magnify</v-icon>
-        </v-btn>
-
-        <v-menu left bottom>
-          <template v-slot:activator="{ on, attrs }">
-            <v-btn icon v-bind="attrs" v-on="on">
-              <v-icon>mdi-dots-vertical</v-icon>
-            </v-btn>
-          </template>
-
-          <v-list>
-            <v-list-item v-for="n in 5" :key="n" @click="() => {}">
-              <v-list-item-title>Option {{ n }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
+              </v-btn>
+            </template>
+            <v-list>
+              <v-list-item link to="/" v-if="this.$store.getters.isUserLogged">
+                <v-list-item-title icon>Inicio</v-list-item-title>
+              </v-list-item>
+              <v-list-item
+                link
+                v-if="this.$store.getters.isUserLogged"
+                @click="goToChangePassword()"
+              >
+                <v-list-item-title icon>Cambiar Contraseña</v-list-item-title>
+              </v-list-item>
+              <v-list-item
+                link
+                v-if="this.$store.getters.isUserLogged"
+                @click="logout()"
+              >
+                <v-list-item-title>Cerrar Sesión</v-list-item-title>
+              </v-list-item>
+              <v-list-item
+                v-if="!this.$store.getters.isUserLogged"
+                link
+                to="/login"
+              >
+                <v-list-item-title>Iniciar Sesión</v-list-item-title>
+              </v-list-item>
+               <v-list-item
+                v-if="!this.$store.getters.isUserLogged"
+                link
+                to="/registrar"
+              >
+                <v-list-item-title>Crear Cuenta</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
+      </template>
       </v-app-bar>
       
 
@@ -45,6 +68,7 @@
 
 <script>
 //import Dashboard from "./components/Dashboard";
+import Cookies from 'js-cookie'
 
 export default {
   name: "App",
@@ -56,5 +80,17 @@ export default {
   data: () => ({
     //
   }),
+  methods:{
+    logout(){
+      Cookies.remove('token')
+      this.$store.commit('setUser',null)
+      this.$store.state.presupuestos=[]
+      this.$store.state.ahorros=[]
+
+
+      this.$router.replace('/login')
+
+    }
+  }
 };
 </script>

@@ -85,6 +85,8 @@ export default {
         monto: this.presupuesto,
         color: this.colors[Math.floor(Math.random() * 4 + 0)],
         children: [],
+        author:this.$store.state.user
+
       };
       this.$store.state.presupuestos.push(presupuesto);
       let aux = null;

@@ -8,8 +8,10 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@vue/composition-api": "^1.0.0-rc.5",
     "axios": "^0.21.1",
     "core-js": "^3.6.5",
+    "js-cookie": "^2.2.1",
     "moment": "^2.29.1",
     "shortid": "^2.2.16",
     "sweetalert2": "^10.14.0",

@@ -80,6 +80,7 @@
 
 <script>
 const shortid = require('shortid');
+import {ApiService} from '../api/index'
 
 export default {
   name: "MetasForm",
@@ -114,11 +115,15 @@ export default {
         color: this.colors[Math.floor(Math.random() * 4 + 0)],
         fechaLimite:this.endDate,
         ahorrado: 0,
+        author:this.$store.state.user
       };
       this.$store.state.metas.push(meta);
-        this.$store.state.showNewMeta=false
+      this.$store.state.showNewMeta=false
 
-      
+      ApiService.postAhorro(meta).then(res=>{
+        meta={}
+        console.log(res)
+      })
       /*this.columNames.map((n, i) => {
         if (aux !== n) {
           this.$store.state.headers.push({ text: n, value: "val" + i });
