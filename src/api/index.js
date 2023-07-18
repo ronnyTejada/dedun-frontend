@@ -1,5 +1,5 @@
 import axios from 'axios'
-const baseDomain = 'http://localhost:3001'
+const baseDomain = 'https://dedunbackend.onrender.com'
 const baseUrl = `${baseDomain}/api/`
 
 export const ApiService = {
